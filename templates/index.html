@@ -1,0 +1,79 @@
+<!doctype html>
+<html>
+  <head>
+    <title>MediaPipe Hands</title>
+    <script src="https://cdn.socket.io/4.0.1/socket.io.min.js"></script>
+  </head>
+  <body>
+    <video id="video" width="640" height="480" autoplay></video>
+    <canvas id="canvas" width="640" height="480"></canvas>
+    <img id="image" src="" alt="MediaPipe Hands" />
+
+    <table id="myTable">
+      <tr>
+        <th>Opção</th>
+        <th>Valor</th>
+      </tr>
+      <tr>
+        <td>1</td>
+        <td id="value1">0</td>
+      </tr>
+      <tr>
+        <td>2</td>
+        <td id="value2">0</td>
+      </tr>
+      <tr>
+        <td>3</td>
+        <td id="value3">0</td>
+      </tr>
+      <tr>
+        <td>4</td>
+        <td id="value4">0</td>
+      </tr>
+    </table>
+
+    <script>
+      var video = document.getElementById("video");
+      var canvas = document.getElementById("canvas");
+      var context = canvas.getContext("2d");
+      var image = document.getElementById("image");
+      var socket = io.connect("http://localhost:5000");
+
+      // Acesso à webcam
+      navigator.mediaDevices
+        .getUserMedia({ video: true })
+        .then(function (stream) {
+          video.srcObject = stream;
+        })
+        .catch(function (err) {
+          console.log("Ocorreu o seguinte erro: " + err);
+        });
+
+      // Captura uma imagem da webcam a cada 100ms e envia para o servidor
+      setInterval(function () {
+        context.drawImage(video, 0, 0, 640, 480);
+        var data = canvas.toDataURL("image/jpeg");
+        socket.emit("image", data);
+      }, 100);
+
+      // Recebe a imagem processada do servidor e exibe na página
+      socket.on("image", function (data) {
+        image.src = "data:image/jpeg;base64," + data;
+      });
+
+      // Atualiza o valor na tabela quando o dedo indicador se move para cima
+      socket.on("index_up", function () {
+        var valueElement = document.getElementById("value1");
+        var value = parseInt(valueElement.innerText);
+        valueElement.innerText = value + 1;
+      });
+
+      // Atualiza o valor na tabela quando o dedo indicador se move para baixo
+      socket.on("index_down", function () {
+        var valueElement = document.getElementById("value1");
+        var value = parseInt(valueElement.innerText);
+        valueElement.innerText = value - 1;
+      });
+    </script>
+  </body>
+</html>
